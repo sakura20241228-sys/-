@@ -1,0 +1,42 @@
+name: 自動投稿
+
+on:
+  schedule:
+    # UTC指定。日本時間の 7:30 / 12:30 / 20:30(ママが見る時間帯)に投稿
+    - cron: "30 22 * * *"
+    - cron: "30 3 * * *"
+    - cron: "30 11 * * *"
+  workflow_dispatch: # 手動実行も可能
+
+permissions:
+  contents: write
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: 依存関係インストール
+        run: pip install -r requirements.txt
+
+      - name: 投稿
+        env:
+          RAKUTEN_APPLICATION_ID: ${{ secrets.RAKUTEN_APPLICATION_ID }}
+          RAKUTEN_AFFILIATE_ID: ${{ secrets.RAKUTEN_AFFILIATE_ID }}
+          THREADS_ACCESS_TOKEN: ${{ secrets.THREADS_ACCESS_TOKEN }}
+          THREADS_USER_ID: ${{ secrets.THREADS_USER_ID }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: python main.py post
+
+      - name: 投稿履歴をコミット
+        run: |
+          git config user.name "autopost-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add -f data/post_history.json || true
+          git diff --cached --quiet || git commit -m "投稿履歴を更新"
+          git push
