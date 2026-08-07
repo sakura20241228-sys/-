@@ -32,8 +32,8 @@ MOM_GENRES = {
 }
 
 # アフィリエイト投稿と日常投稿の比率(daily 1 に対して affiliate N)
-# 例: 2 なら「アフィ2回に1回は日常投稿」
-AFFILIATE_TO_DAILY_RATIO = 2
+# 例: 2 なら「アフィ2回に1回は日常投稿」。1 なら交互
+AFFILIATE_TO_DAILY_RATIO = 1
 
 # ステマ規制(2023年10月〜)対応: アフィリエイト投稿に必ず付ける表記
 PR_LABEL = "#PR"
