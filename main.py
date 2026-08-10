@@ -67,6 +67,9 @@ def cmd_copy(theme: str | None, appeal: str | None, count: int, save: bool) -> N
         role = copywriter.APPEALS[r["appeal"]]["役割"]
         print(f"--- 案{i}【{r['appeal']}】{role} ---")
         print(r["text"])
+        ng = copywriter.ng_words_in(r["text"])
+        if ng:
+            print(f"⚠️ NGワードが含まれています: {'、'.join(ng)} → 言い換えてから投稿してください")
         print()
     theme = results[0]["theme"]
     print("✍️ 書く前にノートに書き出してみる問いかけ:")
