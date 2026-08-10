@@ -68,6 +68,11 @@ def cmd_copy(theme: str | None, appeal: str | None, count: int, save: bool) -> N
         print(f"--- 案{i}【{r['appeal']}】{role} ---")
         print(r["text"])
         print()
+    theme = results[0]["theme"]
+    print("✍️ 書く前にノートに書き出してみる問いかけ:")
+    for q in copywriter.idea_questions(theme):
+        print(f"  ・{q}")
+    print()
     if save:
         path = copywriter.save_drafts(results)
         print(f"下書きを保存しました: {path}")
