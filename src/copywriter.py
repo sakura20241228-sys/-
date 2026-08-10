@@ -25,18 +25,20 @@ from . import analytics, config, generator
 
 MAX_LENGTH = 480  # Threadsの上限500文字に余裕を持たせる
 
-# 集客アカウントで反応を取りやすい育児テーマ(--theme 省略時にここから選ぶ)
+# 集客アカウントで反応を取りやすいテーマ(--theme 省略時にここから選ぶ)
+# 前半: 動画編集×在宅ワーク系(集客の本命テーマ)
+# 後半: 育児あるある系(共感でフォロワーを増やすテーマ)
 THEMES = [
+    "動画編集の始め方",
+    "ママの在宅ワーク",
+    "スキマ時間の使い方",
+    "子育てしながら働く",
+    "パソコン苦手の克服",
+    "ママの副業選び",
     "寝かしつけ",
     "イヤイヤ期",
-    "離乳食・好き嫌い",
     "ワンオペ育児",
-    "夜泣き",
-    "トイトレ",
     "自分時間がない",
-    "保育園・幼稚園の準備",
-    "子どもの習い事選び",
-    "産後の体力・メンタル",
 ]
 
 # ===== 訴求ルール10か条(すべての投稿文に共通で適用) =====
@@ -62,12 +64,30 @@ GAP_HOOK_EXAMPLES = [
     "ズボラな私ほど{theme}がラクになった話。",
 ]
 
+# 動画編集×在宅ワーク系のテーマのときだけ使う型
+WORK_HOOK_EXAMPLES = [
+    "パソコン苦手だった私が、動画編集をお仕事にできた理由。",
+    "動画編集、センスは要りませんでした。",
+    "「ママだから働けない」って、思い込みでした。",
+    "資格ゼロ・経験ゼロの私が選んだのは、動画編集でした。",
+]
+
+# テーマにこの言葉が入っていたら「お仕事系テーマ」とみなす
+WORK_KEYWORDS = ["動画", "編集", "在宅", "副業", "働", "仕事", "パソコン", "スキマ", "収入"]
+
+
+def _hook_candidates(theme: str) -> list[str]:
+    hooks = [h.format(theme=theme) for h in GAP_HOOK_EXAMPLES]
+    if any(k in theme for k in WORK_KEYWORDS):
+        hooks += WORK_HOOK_EXAMPLES
+    return hooks
+
 # ④⑦のための「書く前の問いかけ」(ノートに書き出す用)
 IDEA_QUESTIONS = [
     "普段、{theme}を自分はどうやってる?(ノートに書き出してみる)",
     "そのとき大事にしているポイント(こだわり)は?",
     "{theme}に悩んでいた頃、本当はどうなりたかった?(本音の願い)",
-    "読者がキュンとする未来を1シーンで言うと?(例: 21時にソファでドラマを観てる自分)",
+    "読者がキュンとする未来を1シーンで言うと?(例: 子どものお昼寝中にPCを開いて、自分の名前でお仕事してる自分)",
     "それは「何をするだけ」で叶う?",
 ]
 
@@ -153,7 +173,7 @@ APPEALS: dict[str, dict] = {
         ),
         "テンプレート": textwrap.dedent("""\
             {hook}
-            「(読者がキュンとする未来を1シーンで。例: 21時、ソファでドラマを観てる自分)」
+            「(読者がキュンとする未来を1シーンで。例: 子どものお昼寝中に、おうちでお仕事してる自分)」
             それを叶えたくてつくりました。
             {service}
             (〜するだけ)で始められます♡
@@ -170,7 +190,10 @@ def _profile_text() -> str:
 
 
 def _system_prompt() -> str:
-    hooks = "\n".join(f"- {h.format(theme='(テーマ)')}" for h in GAP_HOOK_EXAMPLES)
+    hooks = "\n".join(
+        [f"- {h.format(theme='(テーマ)')}" for h in GAP_HOOK_EXAMPLES]
+        + [f"- {h}(お仕事系テーマのとき)" for h in WORK_HOOK_EXAMPLES]
+    )
     return textwrap.dedent(f"""\
         あなたは子育て中のママ向けにThreads(スレッズ)を運用し、
         自分のサービスへの集客につなげたいアカウントの中の人です。
@@ -190,6 +213,7 @@ def _system_prompt() -> str:
         - 全体で400文字以内
         - ハッシュタグは2〜4個(#子育てママ など読者が検索しそうなもの)
         - 誇大表現(絶対、必ず○○できる等)や不安を過度に煽る表現は使わない
+        - 収入額や成果を保証する表現(「必ず月◯万円稼げる」「誰でも簡単に稼げる」等)は使わない
         - サービス情報が「(例: …)」のままの項目は、無理に使わず「(サービス名)」のように空欄で残す
         """) + generator._buzz_examples()
 
@@ -228,7 +252,7 @@ def _generate_with_claude(theme: str, appeal: str, count: int) -> list[str] | No
 def _template_draft(theme: str, appeal: str) -> str:
     """APIキーなしでも使える穴埋め式の下書き。"""
     profile = config.BUSINESS_PROFILE
-    hook = random.choice(GAP_HOOK_EXAMPLES).format(theme=theme)
+    hook = random.choice(_hook_candidates(theme))
     return APPEALS[appeal]["テンプレート"].format(
         theme=theme,
         hook=hook,
